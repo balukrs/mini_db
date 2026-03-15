@@ -26,6 +26,13 @@ async function* csvParser(source: string) {
   //     throw Error('Not Csv file');
   //   }
 
+  const unquoteField = (str: string) => {
+    if (str.startsWith('"') && str.endsWith('"')) {
+      str = str.slice(1, -1);
+    }
+    return str.replaceAll('""', '"');
+  };
+
   let isHeader = true;
   let headers: string[] = [];
 
@@ -39,7 +46,7 @@ async function* csvParser(source: string) {
     yield line
       .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
       .reduce<Record<string, string>>((acc, item, inx) => {
-        acc[`${headers[inx]}`] = item;
+        acc[`${headers[inx]}`] = unquoteField(item);
         return acc;
       }, {});
   }

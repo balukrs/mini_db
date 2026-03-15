@@ -1,33 +1,14 @@
-// import CopyFiles from './copy_utils/copy_file.js';
-// import CopyFolders from './copy_utils/copy_folder.js';
-// import backupFilesFolders from './backup/backup.js';
-// import logAnalyse from './analyser/log_analyser.js';
-import csvParser from './csv/parser.js';
+import DocumentStore from './storage/documentStore.js';
 
-// const copy = new CopyFiles({
-//   source:
-//     '/Users/balukrishnar/Desktop/Node Core/Node JS/streams/test_large.txt',
-//   destination: '/Users/balukrishnar/Downloads/test/test_large.txt',
-// });
+const doc = new DocumentStore({
+  location: '/Users/balukrishnar/Downloads/test',
+  name: 'test',
+});
 
-// await copy.copyFile();
+await doc.init();
 
-// const copyFol = new CopyFolders({
-//   source: '/Users/balukrishnar/Desktop/Node Core',
-//   destination: '/Users/balukrishnar/Downloads/test',
-// });
+const test = await doc.list();
 
-// await copyFol.copyFolder();
+console.log(test);
 
-// await backupFilesFolders(
-//   '/Users/balukrishnar/Desktop/Node Core',
-//   '/Users/balukrishnar/Downloads/test',
-// );
-
-// await logAnalyse('/Users/balukrishnar/Downloads/sample_1000_lines.log');
-
-for await (const row of csvParser(
-  '/Users/balukrishnar/Downloads/people-100.csv',
-)) {
-  console.log(row);
-}
+// await doc.csvInjector('/Users/balukrishnar/Downloads/ai-test.csv');

@@ -53,7 +53,7 @@ Those tools interact with MCPStore internally.
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/yourname/mcp-store.git
+git clone https://....
 cd mcp-store
 npm install
 ```
