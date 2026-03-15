@@ -1,6 +1,6 @@
 import type { ReadStream, WriteStream } from 'node:fs';
 import fs, { type FileHandle } from 'node:fs/promises';
-import { extractErrorMessage } from '../utils/extract_error_message.js';
+import { extractErrorMessage } from '../extract_error_message.js';
 
 type Props = {
   source: string;

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import archiver from 'archiver';
 
-import { calculateFileSize } from '../utils/calculate_file_size.js';
+import { calculateFileSize } from '../calculate_file_size.js';
 
 function getTimestamp() {
   const now = new Date();

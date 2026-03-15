@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import CopyFiles from './copy_file.js';
-import { extractErrorMessage } from '../utils/extract_error_message.js';
-import { calculateFileSize } from '../utils/calculate_file_size.js';
+import { extractErrorMessage } from '../extract_error_message.js';
+import { calculateFileSize } from '../calculate_file_size.js';
 
 type Props = {
   source: string;
