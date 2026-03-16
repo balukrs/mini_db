@@ -1,4 +1,5 @@
 import DocumentStore from './storage/documentStore.js';
+import Chunkstore from './storage/chunkStore.js';
 
 const doc = new DocumentStore({
   location: '/Users/balukrishnar/Downloads/test',
@@ -7,8 +8,17 @@ const doc = new DocumentStore({
 
 await doc.init();
 
-const test = await doc.list();
+// await doc.pdfInjector('/Users/balukrishnar/Downloads/sample.pdf');
 
-console.log(test);
+const chunk = new Chunkstore({
+  location: '/Users/balukrishnar/Downloads/test',
+  document: doc,
+  name: 'test',
+  chunk_overlap: 0,
+  chunk_size: 500,
+  separators: ['\n\n', '\n', '. ', ' '],
+});
 
-// await doc.csvInjector('/Users/balukrishnar/Downloads/ai-test.csv');
+await chunk.init();
+
+await chunk.add({ documentId: 'a45fc1d6-e1c1-49fc-9793-8a94819991a1' });

@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import { extractErrorMessage } from '../utils/extract_error_message.js';
 import crypto from 'node:crypto';
 import csvParser from '../utils/csv/parser.js';
+import textParser from '../utils/text/parser.js';
+import pdfParser from '../utils/pdf/parser.js';
 
 type Props = {
   location: string;
@@ -58,7 +60,7 @@ class DocumentStore {
     }
   }
 
-  private async createFile(data: unknown) {
+  private async createFile(data: DocumentType[] | null) {
     try {
       await fs.mkdir(`${this.location}/data`, { recursive: true });
       await fs.writeFile(this.path, JSON.stringify(data ?? []), {
@@ -108,15 +110,55 @@ class DocumentStore {
     const contents = await this.readFile();
     try {
       const data = await csvParser(source);
-      let arr = [];
+      let arr: DocumentType[] = [];
       for await (const line of data) {
         if (line?.content && line?.metadata) {
           const id = crypto.randomUUID();
-          arr.push({ id, content: line.content, metadata: line.metadata });
+          arr.push({
+            id,
+            content: line.content,
+            metadata: JSON.parse(line.metadata),
+          });
         } else continue;
       }
       if (arr.length) {
         await this.createFile([...contents, ...arr]);
+      }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
+  async textInjector(source: string) {
+    try {
+      const data = await textParser(source);
+      const contents = await this.readFile();
+
+      if (data.content) {
+        const id = crypto.randomUUID();
+        await this.createFile([
+          ...contents,
+          { id, content: data.content, metadata: data.metadata },
+        ]);
+      }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
+  async pdfInjector(source: string) {
+    try {
+      const data = await pdfParser(source);
+      const contents = await this.readFile();
+
+      if (data.content) {
+        const id = crypto.randomUUID();
+        await this.createFile([
+          ...contents,
+          { id, content: data.content, metadata: data.metadata },
+        ]);
       }
     } catch (err) {
       console.error(err);

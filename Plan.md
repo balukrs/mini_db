@@ -21,7 +21,7 @@ Build a `DocumentStore` that saves and retrieves documents as JSON files on disk
 - Uses `fs/promises` (already familiar from copy utils)
 - **Utils used:** `extract_error_message.ts`, `calculate_file_size.ts`, `csv/parser.ts` (for ingesting CSV as documents)
 
-## Phase 2: Chunking - In Progress
+## Phase 2: Chunking - Done
 
 Split documents into smaller pieces for accurate retrieval.
 
@@ -29,7 +29,11 @@ Split documents into smaller pieces for accurate retrieval.
 - Each chunk keeps a reference back to its parent document ID
 - Key learning: semantic search works better on small text segments than full documents
 
-## Phase 3: Embeddings & Vector Search
+- If the document is under ~500 characters — don't chunk it, store as-is
+  - If it's 500–2000 characters — maybe 2-3 chunks, or just keep it whole
+  - If it's over 2000 characters — definitely chunk it
+
+## Phase 3: Embeddings & Vector Search - In Progress
 
 The core AI retrieval piece.
 

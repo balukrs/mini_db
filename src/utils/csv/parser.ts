@@ -1,6 +1,5 @@
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
-
 import path from 'path';
 
 function isCSV(file: string) {
