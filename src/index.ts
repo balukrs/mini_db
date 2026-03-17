@@ -1,24 +1,93 @@
 import DocumentStore from './storage/documentStore.js';
 import Chunkstore from './storage/chunkStore.js';
+import VectorStore from './storage/vectorStore.js';
 
-const doc = new DocumentStore({
-  location: '/Users/balukrishnar/Downloads/test',
-  name: 'test',
-});
+type SupportedModels = 'Xenova/all-MiniLM-L6-v2';
 
-await doc.init();
+type Props = {
+  location: string;
+  name: string;
+  chunkConfiguration: {
+    overlap: number;
+    size: number;
+    seperators: string[];
+  };
+  vectorConfigurations: {
+    cacheDir: string;
+    searchLimit: number;
+    model: SupportedModels;
+  };
+};
 
-// await doc.pdfInjector('/Users/balukrishnar/Downloads/sample.pdf');
+class MiniVectorDatabase {
+  location: string;
+  name: string;
+  chunkConfiguration: {
+    overlap: number;
+    size: number;
+    seperators: string[];
+  };
+  vectorConfigurations: {
+    cacheDir: string;
+    searchLimit: number;
+    model: SupportedModels;
+  };
+  doc: DocumentStore | null;
+  chunk: Chunkstore | null;
+  constructor({
+    location,
+    name,
+    chunkConfiguration,
+    vectorConfigurations,
+  }: Props) {
+    this.location = location;
+    this.name = name;
+    this.chunkConfiguration = chunkConfiguration;
+    this.vectorConfigurations = vectorConfigurations;
+    this.doc = null;
+    this.chunk = null;
+  }
+  async init() {
+    try {
+      this.doc = new DocumentStore({
+        location: this.location,
+        name: this.name,
+      });
 
-const chunk = new Chunkstore({
-  location: '/Users/balukrishnar/Downloads/test',
-  document: doc,
-  name: 'test',
-  chunk_overlap: 0,
-  chunk_size: 500,
-  separators: ['\n\n', '\n', '. ', ' '],
-});
+      await this.doc.init();
 
-await chunk.init();
+      this.chunk = new Chunkstore({
+        location: this.location,
+        document: this.doc,
+        name: this.name,
+        chunk_overlap: this.chunkConfiguration.overlap || 0,
+        chunk_size: this.chunkConfiguration.size || 500,
+        separators: this.chunkConfiguration.seperators || [
+          '\n\n',
+          '\n',
+          '. ',
+          ' ',
+        ],
+      });
 
-await chunk.add({ documentId: 'a45fc1d6-e1c1-49fc-9793-8a94819991a1' });
+      await this.chunk.init();
+
+      const vector = new VectorStore({
+        location: this.location,
+        cacheDir: this.vectorConfigurations.cacheDir || './models',
+        name: this.name,
+        chunk: this.chunk,
+        searchlimit: this.vectorConfigurations.searchLimit || 5,
+      });
+
+      await vector.init(
+        this.vectorConfigurations.model || 'Xenova/all-MiniLM-L6-v2',
+      );
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+}
+
+export default MiniVectorDatabase;
