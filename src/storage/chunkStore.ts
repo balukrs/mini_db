@@ -12,7 +12,7 @@ type Props = {
   separators: string[];
   document: DocumentStore;
 };
-type ChunkType = {
+export type ChunkType = {
   id: string;
   content: string;
   documentId: string;
@@ -20,6 +20,9 @@ type ChunkType = {
 };
 type ChunkTypeRequest = {
   documentId: string;
+};
+type ChunkTypeRequestMultiple = {
+  documentId: string[];
 };
 
 class Chunkstore {
@@ -90,7 +93,7 @@ class Chunkstore {
     }
   }
 
-  async add(data: ChunkTypeRequest) {
+  async add(data: ChunkTypeRequest): Promise<string[]> {
     try {
       const contents = await this.readFile();
       if (data.documentId) {
@@ -113,11 +116,27 @@ class Chunkstore {
             };
           });
           await this.createFile([...contents, ...chunkData]);
+          return chunkData.map((c) => c.id);
         }
       }
+      return [];
     } catch (err) {
       console.error(err);
       throw err;
+    }
+  }
+
+  async addMultiple(data: ChunkTypeRequestMultiple): Promise<string[]> {
+    try {
+      const allIds: string[] = [];
+      for (const docId of data.documentId) {
+        const ids = await this.add({ documentId: docId });
+        allIds.push(...ids);
+      }
+      return allIds;
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
   }
 
@@ -135,6 +154,13 @@ class Chunkstore {
   async deleteItem(data: string) {
     const contents = await this.readFile();
     const req = contents.filter((item) => item.id !== data);
+    await this.createFile(req);
+  }
+
+  async deleteMultipleItem(data: ChunkType[]) {
+    const contents = await this.readFile();
+    const ids = new Set(data.map((d) => d.id));
+    const req = contents.filter((item) => !ids.has(item.id));
     await this.createFile(req);
   }
 

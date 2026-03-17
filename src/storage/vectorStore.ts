@@ -7,7 +7,7 @@ import {
   type FeatureExtractionPipeline,
   type DataArray,
 } from '@xenova/transformers';
-import type Chunkstore from './chunkStore.js';
+import Chunkstore, { type ChunkType } from './chunkStore.js';
 
 type Props = {
   cacheDir: string;
@@ -24,6 +24,9 @@ type VectorType = {
 };
 type VectorTypeRequest = {
   chunkId: string;
+};
+type VectorTypeRequestMultiple = {
+  chunkId: string[];
 };
 
 class VectorStore {
@@ -93,6 +96,13 @@ class VectorStore {
     }
   }
 
+  async deleteMultipleItem(data: ChunkType[]) {
+    const contents = await this.readFile();
+    const ids = new Set(data.map((d) => d.id));
+    const req = contents.filter((item) => !ids.has(item.chunkId));
+    await this.createFile(req);
+  }
+
   async embedd(data: VectorTypeRequest) {
     try {
       const reqText = await this.chunk.get(data.chunkId);
@@ -107,6 +117,17 @@ class VectorStore {
         ...contents,
         { id, chunkId: data.chunkId, embedding: embedding.data },
       ]);
+    } catch (error) {
+      console.error(extractErrorMessage(error));
+      throw error;
+    }
+  }
+
+  async embeddIds(data: VectorTypeRequestMultiple) {
+    try {
+      for (const id of data.chunkId) {
+        await this.embedd({ chunkId: id });
+      }
     } catch (error) {
       console.error(extractErrorMessage(error));
       throw error;
@@ -158,7 +179,7 @@ class VectorStore {
 
       const queryEmbedd = await this.extractor(query);
 
-      for await (const content of contents) {
+      for (const content of contents) {
         const score = this.cosineSimilarity(
           queryEmbedd.data,
           content.embedding,

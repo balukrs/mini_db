@@ -9,7 +9,7 @@ type Props = {
   location: string;
   name: string;
 };
-type DocumentType = {
+export type DocumentType = {
   id: string;
   content: string;
   metadata: Record<string, string>;
@@ -106,7 +106,7 @@ class DocumentStore {
     }
   }
 
-  async csvInjector(source: string) {
+  async csvInjector(source: string): Promise<string[]> {
     const contents = await this.readFile();
     try {
       const data = await csvParser(source);
@@ -124,13 +124,14 @@ class DocumentStore {
       if (arr.length) {
         await this.createFile([...contents, ...arr]);
       }
+      return arr.map((item) => item.id);
     } catch (err) {
       console.error(err);
       throw err;
     }
   }
 
-  async textInjector(source: string) {
+  async textInjector(source: string): Promise<string | null> {
     try {
       const data = await textParser(source);
       const contents = await this.readFile();
@@ -141,14 +142,16 @@ class DocumentStore {
           ...contents,
           { id, content: data.content, metadata: data.metadata },
         ]);
+        return id;
       }
+      return null;
     } catch (err) {
       console.error(err);
       throw err;
     }
   }
 
-  async pdfInjector(source: string) {
+  async pdfInjector(source: string): Promise<string | null> {
     try {
       const data = await pdfParser(source);
       const contents = await this.readFile();
@@ -159,7 +162,9 @@ class DocumentStore {
           ...contents,
           { id, content: data.content, metadata: data.metadata },
         ]);
+        return id;
       }
+      return null;
     } catch (err) {
       console.error(err);
       throw err;
