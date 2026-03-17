@@ -1,228 +1,133 @@
-# MCPStore
+# mcp-store-db
 
-**MCPStore** is a lightweight Node.js library that acts as a storage and retrieval layer for **MCP (Model Context Protocol) servers**.
+A lightweight vector database and RAG storage layer for Node.js. Supports document ingestion, chunking, embedding, and semantic search — all file-based with zero external database dependencies.
 
-It provides primitives for storing and retrieving:
-
-- Documents
-- Text chunks
-- Vector embeddings
-- Metadata
-- Session history
-
-The library is designed for **AI retrieval workflows**, enabling MCP servers to perform semantic search and context retrieval efficiently.
-
----
-
-# Architecture
-
-MCPStore is designed to sit behind an MCP server and power its data retrieval tools.
-
-AI Client
-│
-▼
-MCP Server
-│
-▼
-MCPStore (library)
-
-The MCP server exposes tools like:
-
-- `search_memory`
-- `store_document`
-- `get_context`
-
-Those tools interact with MCPStore internally.
-
----
-
-# Features
-
-- Document storage
-- Chunk-based document processing
-- Vector similarity search
-- Metadata filtering
-- Session memory management
-- Simple JSON persistence
-- Lightweight and easy to integrate
-
----
-
-# Installation
-
-Clone the repository and install dependencies:
+## Installation
 
 ```bash
-git clone https://....
-cd mcp-store
-npm install
+npm install mcp-store-db
 ```
 
-mcp-store
-│
-├── src
-│
-├── core
-│ └── MCPStore.js
-│
-├── storage
-│ ├── documentStore.js
-│ ├── chunkStore.js
-│ └── vectorStore.js
-│
-├── vector
-│ └── vectorSearch.js
-│
-├── metadata
-│ └── metadataIndex.js
-│
-├── cache
-│ └── lruCache.js
-│
-├── session
-│ └── sessionManager.js
-│
-├── utils
-│ └── cosineSimilarity.js
-│
-└── index.js
+## Quick Start
 
-# Retrieval-Augmented Generation (RAG)
+```typescript
+import MiniVectorDatabase from 'mcp-store-db';
 
-MCPStore is designed to support **Retrieval-Augmented Generation (RAG)** workflows used by modern AI systems.
+const db = new MiniVectorDatabase({
+  location: './data',
+  name: 'my-store',
+  chunkConfiguration: {
+    overlap: 0,
+    size: 500,
+    separators: ['\n\n', '\n', '. ', ' '],
+  },
+  vectorConfigurations: {
+    cacheDir: './models',
+    searchLimit: 5,
+    model: 'Xenova/all-MiniLM-L6-v2',
+  },
+});
 
-Instead of sending an entire knowledge base to a language model, RAG retrieves only the most relevant pieces of information and supplies them as context to the model.
+// Initialize (downloads model on first run)
+await db.init();
 
-MCPStore acts as the **retrieval layer** in a RAG pipeline.
+// Ingest a document (supports .txt, .pdf, .csv)
+const docId = await db.ingest('./documents/example.txt');
 
----
+// Semantic search
+const results = await db.query('what is machine learning');
+console.log(results);
+// [{ content: '...', score: 0.82, chunkId: '...', documentId: '...' }]
 
-## RAG Pipeline
+// List all documents
+const docs = await db.listDoc();
 
-User Query
-│
-▼
-Embedding Model
-│
-▼
-MCPStore Vector Search
-│
-▼
-Retrieve Relevant Chunks
-│
-▼
-Context Assembly
-│
-▼
-LLM Prompt
-│
-▼
-Generated Answer
+// Get a specific document
+const doc = await db.getDoc('document-id');
 
-The language model performs **generation**, while MCPStore performs **retrieval**.
+// Delete a document (cascades to chunks and vectors)
+await db.deleteDoc('document-id');
+```
 
----
-
-## Document Ingestion
-
-When documents are added to MCPStore they are processed into smaller pieces called **chunks**.
-
-Chunking improves retrieval accuracy because semantic search works better on smaller text segments.
-
-Example:
-Document
-│
-├── Chunk 1
-├── Chunk 2
-├── Chunk 3
-└── Chunk 4
-
-Each chunk receives an embedding vector and is stored in the vector index.
-
----
-
-## Vector Retrieval
-
-During search:
-
-1. The query is converted into an embedding
-2. MCPStore computes similarity between the query and stored vectors
-3. The top matching chunks are returned
-
-Similarity is computed using **cosine similarity**.
-
----
-
-## Re-Ranking
-
-Vector similarity alone is often insufficient for accurate retrieval.
-
-MCPStore supports **re-ranking**, where retrieved chunks are scored again using additional signals such as:
-
-- metadata relevance
-- keyword overlap
-- document source priority
-- recency
-
-Example ranking flow:
-
-Vector Search → Top 20 chunks
-│
-▼
-Re-ranking stage
-│
-▼
-Top 5 chunks returned as context
-
-Re-ranking improves the quality of the final context provided to the language model.
-
----
-
-## Context Assembly
-
-After retrieval and ranking, MCPStore assembles a context block that can be passed to an LLM.
-
-Example:
-Context:
-• Transformers rely on self-attention mechanisms.
-• Attention computes weighted representations of tokens.
-• Multi-head attention improves representation capacity.
-
-This context is then used by the LLM to generate a response.
-
----
-
-## Example RAG Workflow
-
-```javascript
-const embedding = await embed(query)
-
-const context = await store.getContext(embedding)
-
-const response = await llm.generate({
-  query,
-  context
-})
-
-In this workflow:
-	•	MCPStore handles retrieval
-	•	The LLM handles generation
-
-
-
----
-
-💡 After adding this section, your README now clearly shows that the project supports:
-
-- **Vector search**
-- **Chunking**
-- **RAG**
-- **Context retrieval**
-- **Re-ranking**
-
-These are exactly the **core concepts used in real AI retrieval systems**.
-
----
-
+## How It Works
 
 ```
+Ingest: File → Document Store → Chunk Store → Vector Store (embeddings)
+Query:  Text → Embed → Cosine Similarity Search → Return ranked chunks
+```
+
+The library runs a three-layer pipeline:
+
+1. **Document Store** — stores raw documents with metadata as JSON files
+2. **Chunk Store** — splits documents into smaller segments using recursive chunking
+3. **Vector Store** — generates embeddings using [Xenova/transformers](https://github.com/xenova/transformers.js) and performs cosine similarity search
+
+All data is stored as JSON files on disk. No database server required.
+
+## API
+
+### `new MiniVectorDatabase(props)`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `location` | `string` | Directory path for storing data |
+| `name` | `string` | Name of the database instance |
+| `chunkConfiguration.size` | `number` | Maximum chunk size in characters |
+| `chunkConfiguration.overlap` | `number` | Character overlap between chunks |
+| `chunkConfiguration.separators` | `string[]` | Split boundaries in priority order |
+| `vectorConfigurations.cacheDir` | `string` | Directory to cache the embedding model |
+| `vectorConfigurations.searchLimit` | `number` | Max results returned by `query()` |
+| `vectorConfigurations.model` | `SupportedModels` | Embedding model name |
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `init()` | `Promise<void>` | Initialize stores and load embedding model |
+| `ingest(filePath)` | `Promise<string \| string[] \| null>` | Ingest a file (.txt, .pdf, .csv) and return document ID(s) |
+| `query(text)` | `Promise<QueryResult[]>` | Semantic search — returns ranked chunks with scores |
+| `listDoc()` | `Promise<DocumentType[]>` | List all documents |
+| `getDoc(id)` | `Promise<DocumentType \| undefined>` | Get a document by ID |
+| `deleteDoc(id)` | `Promise<void>` | Delete a document and its chunks/vectors |
+
+### Events
+
+The class extends `EventEmitter` and emits:
+
+| Event | Values | Description |
+|-------|--------|-------------|
+| `status` | `'in-progress'`, `'ready'` | Initialization status |
+| `ingest` | `'in-progress'`, `'done'` | Ingestion progress |
+| `query` | `'in-progress'`, `'done'` | Query progress |
+| `delete` | `'in-progress'`, `'done'` | Deletion progress |
+| `error` | `string` | Error message |
+
+### Exported Types
+
+```typescript
+import MiniVectorDatabase, {
+  type MiniVectorDatabaseProps,
+  type QueryResult,
+  type DocumentType,
+  type SupportedModels,
+} from 'mcp-store-db';
+```
+
+## Supported File Types
+
+- `.txt` — Plain text files
+- `.pdf` — PDF documents
+- `.csv` — CSV files (requires `content` and `metadata` columns)
+
+## Supported Models
+
+- `Xenova/all-MiniLM-L6-v2` — 384-dimensional embeddings, good balance of speed and quality
+
+## Requirements
+
+- Node.js >= 18
+- ESM project (`"type": "module"` in package.json)
+
+## License
+
+MIT

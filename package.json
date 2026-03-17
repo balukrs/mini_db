@@ -31,11 +31,11 @@
     "vector-database",
     "cosine-similarity"
   ],
-  "author": "",
+  "author": "Balu Krishna R",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/balukrs/mcp_store_db"
   },
   "engines": {
     "node": ">=18"
