@@ -17,14 +17,14 @@ export type QueryResult = {
 export type MiniVectorDatabaseProps = {
   location: string;
   name: string;
-  chunkConfiguration: {
-    overlap: number;
-    size: number;
-    separators: string[];
+  chunkConfiguration?: {
+    overlap?: number;
+    size?: number;
+    separators?: string[];
   };
   vectorConfigurations: {
     cacheDir: string;
-    searchLimit: number;
+    searchLimit?: number;
     model: SupportedModels;
   };
 };
@@ -32,14 +32,16 @@ export type MiniVectorDatabaseProps = {
 class MiniVectorDatabase extends EventEmitter {
   location: string;
   name: string;
-  chunkConfiguration: {
-    overlap: number;
-    size: number;
-    separators: string[];
-  };
+  chunkConfiguration:
+    | {
+        overlap?: number;
+        size?: number;
+        separators?: string[];
+      }
+    | undefined;
   vectorConfigurations: {
     cacheDir: string;
-    searchLimit: number;
+    searchLimit?: number;
     model: SupportedModels;
   };
   private doc!: DocumentStore;
@@ -73,9 +75,9 @@ class MiniVectorDatabase extends EventEmitter {
         location: this.location,
         document: this.doc,
         name: this.name,
-        chunk_overlap: this.chunkConfiguration.overlap || 0,
-        chunk_size: this.chunkConfiguration.size || 500,
-        separators: this.chunkConfiguration.separators || [
+        chunk_overlap: this.chunkConfiguration?.overlap || 0,
+        chunk_size: this.chunkConfiguration?.size || 500,
+        separators: this.chunkConfiguration?.separators || [
           '\n\n',
           '\n',
           '. ',
@@ -87,10 +89,10 @@ class MiniVectorDatabase extends EventEmitter {
 
       this.vector = new VectorStore({
         location: this.location,
-        cacheDir: this.vectorConfigurations.cacheDir || './models',
+        cacheDir: this.vectorConfigurations?.cacheDir || './models',
         name: this.name,
         chunk: this.chunk,
-        searchlimit: this.vectorConfigurations.searchLimit || 5,
+        searchlimit: this.vectorConfigurations?.searchLimit || 5,
       });
 
       await this.vector.init(

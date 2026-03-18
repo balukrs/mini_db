@@ -1,6 +1,6 @@
 {
   "name": "mcp-store-db",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A lightweight vector database and RAG storage layer for MCP servers. Supports document ingestion, chunking, embedding, and semantic search.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
